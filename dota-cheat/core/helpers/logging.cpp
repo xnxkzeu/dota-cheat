@@ -16,7 +16,7 @@ namespace Logging
 		ofsOutput.open( PROJECT_NAME ".log", std::ios::trunc | std::ios::binary );
 		if ( !ofsOutput.is_open( ) )
 			throw std::runtime_error( "Failed to open logging file for writing." );
-
+		
 #ifdef _DEBUG
 		if ( !AllocConsole( ) )
 			throw std::runtime_error( "Failed to allocate console." );
@@ -37,14 +37,12 @@ namespace Logging
 
 #ifdef _DEBUG
 		if ( pStream )
-		{
 			fclose( pStream );
 
-			FreeConsole( );
+		FreeConsole( );
 
-			if ( const HWND hConsole = GetConsoleWindow( ) )
-				PostMessage( hConsole, WM_CLOSE, 0, 0 );
-		}
+		if ( const HWND hConsole = GetConsoleWindow( ) )
+			PostMessage( hConsole, WM_CLOSE, 0, 0 );
 #endif // _DEBUG
 	}
 
