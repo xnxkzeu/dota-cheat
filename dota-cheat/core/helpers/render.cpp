@@ -6,8 +6,9 @@
 #include <vector>
 #include <mutex>
 #include <shared_mutex>
-#include <any>
+#include <variant>
 #include <string>
+#include <atlbase.h>
 
 #define IMGUI_DEFINE_MATH_OPERATORS
 
@@ -26,14 +27,6 @@
 
 namespace Render
 {
-	enum class DrawType : int
-	{
-		None = 0,
-		Line,
-		Rect,
-		Text,
-	};
-
 	struct LineObject_t
 	{
 		ImVec2 m_vecStartPos = { };
@@ -61,18 +54,7 @@ namespace Render
 		std::string m_szText = { };
 	};
 
-	struct Object_t
-	{
-		Object_t( DrawType nType, std::any anyObject )
-			: m_nType( nType ), m_anyObject( std::move( anyObject ) )
-		{
-
-		}
-
-		DrawType m_nType = DrawType::None;
-
-		std::any m_anyObject = { };
-	};
+	using Object_t = std::variant< LineObject_t, RectObject_t, TextObject_t >;
 
 	std::shared_mutex mutexRender = { };
 
@@ -106,12 +88,11 @@ namespace Render
 		if ( !pDeviceContext )
 			throw std::runtime_error( "Failed to get d3d11 device context." );
 
-		wchar_t* pwszFontsPath = nullptr;
+		CComHeapPtr< wchar_t > pwszFontsPath = { };
 		if ( FAILED( SHGetKnownFolderPath( FOLDERID_Fonts, 0, nullptr, &pwszFontsPath ) ) )
 			throw std::runtime_error( "Failed to get fonts directory path." );
 
-		const std::filesystem::path pathFonts = pwszFontsPath;
-		CoTaskMemFree( pwszFontsPath );
+		const std::filesystem::path pathFonts = pwszFontsPath.m_pData;
 
 		ImVector< ImWchar > vecRanges = { };
 		ImFontGlyphRangesBuilder rangesBuilder = { };
@@ -125,20 +106,20 @@ namespace Render
 			}
 		);
 
-		rangesBuilder.AddRanges( arrBaseRanges.data( ) );
-		rangesBuilder.AddRanges( pIO->Fonts->GetGlyphRangesCyrillic( ) );
-		rangesBuilder.BuildRanges( &vecRanges );
-
 		ImGui::CreateContext( );
-		
-		ImFontConfig verdanaConfig = {};
-		verdanaConfig.FontBuilderFlags |= ImGuiFreeTypeBuilderFlags_Bold;
-		pIO->Fonts->AddFontFromFileTTF( ( pathFonts / "Verdana.ttf" ).string( ).c_str( ), 14.f, &verdanaConfig, vecRanges.Data );
-		pIO->Fonts->Build( );
 
 		pIO = &ImGui::GetIO( );
 		pIO->IniFilename = nullptr;
 		pIO->LogFilename = nullptr;
+
+		rangesBuilder.AddRanges( arrBaseRanges.data( ) );
+		rangesBuilder.AddRanges( pIO->Fonts->GetGlyphRangesCyrillic( ) );
+		rangesBuilder.BuildRanges( &vecRanges );
+
+		ImFontConfig verdanaConfig = {};
+		verdanaConfig.FontBuilderFlags |= ImGuiFreeTypeBuilderFlags_Bold;
+		pIO->Fonts->AddFontFromFileTTF( ( pathFonts / "Verdana.ttf" ).string( ).c_str( ), 14.f, &verdanaConfig, vecRanges.Data );
+		pIO->Fonts->Build( );
 
 		ImGui_ImplWin32_Init( hWindow );
 		ImGui_ImplDX11_Init( pD3D11Device, pDeviceContext );
@@ -175,49 +156,49 @@ namespace Render
 			if ( pDeviceContext )
 				pDeviceContext->OMSetRenderTargets( 1, &pRenderTargetView, nullptr );
 		}
+		
+		struct ObjectVisitor_t
+		{
+			ObjectVisitor_t( ImDrawList* pDrawList = nullptr )
+				: m_pDrawList( pDrawList )
+			{
+			}
 
-		if ( vecSafeDrawData.empty( ) )
-			return;
+			ImDrawList* m_pDrawList = nullptr;
+
+			void operator()( const LineObject_t& lineObject )
+			{
+				m_pDrawList->AddLine( lineObject.m_vecStartPos, lineObject.m_vecEndPos, lineObject.m_nColor, lineObject.m_flThickness );
+			}
+
+			void operator()( const RectObject_t& rectObject )
+			{
+				if ( rectObject.m_unFlags & RectRenderFlags::Filled )
+				{
+					if ( rectObject.m_unFlags & RectRenderFlags::Outline )
+						m_pDrawList->AddRectFilled( rectObject.m_vecMin - ImVec2( 1.f, 1.f ), rectObject.m_vecMax + ImVec2( 1.f, 1.f ), rectObject.m_nOutlineColor, rectObject.m_flRounding, rectObject.m_fRoundingCorners );
+
+					m_pDrawList->AddRectFilled( rectObject.m_vecMin, rectObject.m_vecMax, rectObject.m_nColor, rectObject.m_flRounding, rectObject.m_fRoundingCorners );
+				}
+				else
+				{
+					if ( rectObject.m_unFlags & RectRenderFlags::Outline )
+						m_pDrawList->AddRect( rectObject.m_vecMin - ImVec2( 1.f, 1.f ), rectObject.m_vecMax + ImVec2( 1.f, 1.f ), rectObject.m_nOutlineColor, rectObject.m_flRounding, rectObject.m_fRoundingCorners, rectObject.m_flThickness + 2.f );
+
+					m_pDrawList->AddRect( rectObject.m_vecMin, rectObject.m_vecMax, rectObject.m_nColor, rectObject.m_flRounding, rectObject.m_fRoundingCorners, rectObject.m_flThickness );
+				}
+			}
+
+			void operator()( const TextObject_t& textObject )
+			{
+				m_pDrawList->AddText( textObject.m_vecPos, textObject.m_nColor, textObject.m_szText.c_str( ) );
+			}
+		};
+
+		ObjectVisitor_t objectVisitor( pDrawList );
 
 		for ( const auto& objectInfo : vecSafeDrawData )
-		{
-			switch ( objectInfo.m_nType )
-			{
-				case DrawType::Line:
-				{
-					const LineObject_t& lineObject = std::any_cast< LineObject_t >( objectInfo.m_anyObject );
-					pDrawList->AddLine( lineObject.m_vecStartPos, lineObject.m_vecEndPos, lineObject.m_nColor, lineObject.m_flThickness );
-					break;
-				}
-				case DrawType::Rect:
-				{
-					const RectObject_t& rectObject = std::any_cast< RectObject_t >( objectInfo.m_anyObject );
-					if ( rectObject.m_unFlags & RectRenderFlags::Filled )
-					{
-						if ( rectObject.m_unFlags & RectRenderFlags::Outline )
-							pDrawList->AddRectFilled( rectObject.m_vecMin - ImVec2( 1.f, 1.f ), rectObject.m_vecMax + ImVec2( 1.f, 1.f ), rectObject.m_nOutlineColor, rectObject.m_flRounding, rectObject.m_fRoundingCorners );
-
-						pDrawList->AddRectFilled( rectObject.m_vecMin, rectObject.m_vecMax, rectObject.m_nColor, rectObject.m_flRounding, rectObject.m_fRoundingCorners );
-					}
-					else
-					{
-						if ( rectObject.m_unFlags & RectRenderFlags::Outline )
-							pDrawList->AddRect( rectObject.m_vecMin - ImVec2( 1.f, 1.f ), rectObject.m_vecMax + ImVec2( 1.f, 1.f ), rectObject.m_nOutlineColor, rectObject.m_flRounding, rectObject.m_fRoundingCorners, rectObject.m_flThickness + 2.f );
-
-						pDrawList->AddRect( rectObject.m_vecMin, rectObject.m_vecMax, rectObject.m_nColor, rectObject.m_flRounding, rectObject.m_fRoundingCorners, rectObject.m_flThickness );
-					}
-					break;
-				}
-				case DrawType::Text:
-				{
-					const TextObject_t& textObject = std::any_cast< TextObject_t >( objectInfo.m_anyObject );
-					pDrawList->AddText( textObject.m_vecPos, textObject.m_nColor, textObject.m_szText.c_str( ) );
-					break;
-				}
-				default:
-					break;
-			}
-		}
+			std::visit( objectVisitor, objectInfo );
 	}
 
 	void ClearDrawData( )
@@ -251,45 +232,39 @@ namespace Render
 	void Line( const Math::Vector_t< float, 2 >& vecStart, const Math::Vector_t< float, 2 >& vecEnd, const Color_t colLine, float flThickness )
 	{
 		vecDrawData.emplace_back(
-			DrawType::Line,
-			std::make_any< LineObject_t >(
-				LineObject_t{
-					*reinterpret_cast< const ImVec2* >( &vecStart ),
-					*reinterpret_cast< const ImVec2* >( &vecEnd ),
-					colLine,
-					flThickness
-				} )
+			LineObject_t{
+				*reinterpret_cast< const ImVec2* >( &vecStart ),
+				*reinterpret_cast< const ImVec2* >( &vecEnd ),
+				colLine,
+				flThickness
+			}
 		);
 	}
 
 	void Rect( const Math::Vector_t< float, 2 >& vecMin, const Math::Vector_t< float, 2 >& vecMax, const Color_t colRect, std::uint32_t fFlags, const Color_t colOutline, float flRounding, ImDrawFlags fRoundingCorners, float flThickness )
 	{
 		vecDrawData.emplace_back(
-			DrawType::Rect,
-			std::make_any< RectObject_t >(
-				RectObject_t{
-					*reinterpret_cast< const ImVec2* >( &vecMin ),
-					*reinterpret_cast< const ImVec2* >( &vecMax ),
-					colRect,
-					static_cast< RectRenderFlags >( fFlags ),
-					colOutline,
-					flRounding,
-					fRoundingCorners,
-					flThickness
-				} )
+			RectObject_t{
+				*reinterpret_cast< const ImVec2* >( &vecMin ),
+				*reinterpret_cast< const ImVec2* >( &vecMax ),
+				colRect,
+				static_cast< RectRenderFlags >( fFlags ),
+				colOutline,
+				flRounding,
+				fRoundingCorners,
+				flThickness
+			}
 		);
 	}
 
 	void Text( const Math::Vector_t< float, 2 >& vecPos, const char* pszText, const Color_t colText )
 	{
 		vecDrawData.emplace_back(
-			DrawType::Text,
-			std::make_any< TextObject_t >(
-				TextObject_t{
-					*reinterpret_cast< const ImVec2* >( &vecPos ),
-					colText,
-					pszText
-				} )
+			TextObject_t{
+				*reinterpret_cast< const ImVec2* >( &vecPos ),
+				colText,
+				pszText
+			}
 		);
 	}
 
