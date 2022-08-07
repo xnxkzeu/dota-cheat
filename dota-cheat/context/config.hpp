@@ -9,6 +9,7 @@ namespace CTX
 		struct Visuals_t
 		{
 			bool m_bHighlighIllusions = false;
+			bool m_bVisibleByEnemy = false;
 		} Visuals;
 	};
 

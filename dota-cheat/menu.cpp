@@ -29,6 +29,7 @@ namespace Menu
 		if( ImGui::Begin( PROJECT_NAME ) )
 		{
 			ImGui::Checkbox( "Highlight Illusions", &CTX::Config->Visuals.m_bHighlighIllusions );
+			ImGui::Checkbox( "Visible By Enemy", &CTX::Config->Visuals.m_bVisibleByEnemy );
 		}
 		ImGui::End( );
 	}

@@ -44,6 +44,7 @@ class C_DOTA_BaseNPC : public C_BaseModelEntity
 public:
 	SCHEMA_VARIABLE( "C_DOTA_BaseNPC", "m_flMana", GetMana, float );
 	SCHEMA_VARIABLE( "C_DOTA_BaseNPC", "m_bIsIllusion", IsIllusion, bool );
+	SCHEMA_VARIABLE( "C_DOTA_BaseNPC", "m_flStartSequenceCycle", GetStartSequenceCycle, float );
 };
 
 class C_DOTA_BaseNPC_Hero : public C_DOTA_BaseNPC

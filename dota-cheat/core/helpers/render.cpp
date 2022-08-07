@@ -106,38 +106,39 @@ namespace Render
 		if ( !pDeviceContext )
 			throw std::runtime_error( "Failed to get d3d11 device context." );
 
+		wchar_t* pwszFontsPath = nullptr;
+		if ( FAILED( SHGetKnownFolderPath( FOLDERID_Fonts, 0, nullptr, &pwszFontsPath ) ) )
+			throw std::runtime_error( "Failed to get fonts directory path." );
+
+		const std::filesystem::path pathFonts = pwszFontsPath;
+		CoTaskMemFree( pwszFontsPath );
+
+		ImVector< ImWchar > vecRanges = { };
+		ImFontGlyphRangesBuilder rangesBuilder = { };
+
+		static constexpr auto arrBaseRanges = std::to_array< ImWchar >( {
+				0x0100, 0x024F,
+				0x0300, 0x03FF,
+				0x0600, 0x06FF,
+				0x0E00, 0x0E7F,
+				0
+			}
+		);
+
+		rangesBuilder.AddRanges( arrBaseRanges.data( ) );
+		rangesBuilder.AddRanges( pIO->Fonts->GetGlyphRangesCyrillic( ) );
+		rangesBuilder.BuildRanges( &vecRanges );
+
 		ImGui::CreateContext( );
+		
+		ImFontConfig verdanaConfig = {};
+		verdanaConfig.FontBuilderFlags |= ImGuiFreeTypeBuilderFlags_Bold;
+		pIO->Fonts->AddFontFromFileTTF( ( pathFonts / "Verdana.ttf" ).string( ).c_str( ), 14.f, &verdanaConfig, vecRanges.Data );
+		pIO->Fonts->Build( );
 
 		pIO = &ImGui::GetIO( );
 		pIO->IniFilename = nullptr;
 		pIO->LogFilename = nullptr;
-
-		if ( wchar_t* pwszFontsPath = nullptr; SUCCEEDED( SHGetKnownFolderPath( FOLDERID_Fonts, 0, nullptr, &pwszFontsPath ) ) )
-		{
-			const std::filesystem::path pathFonts = pwszFontsPath;
-			CoTaskMemFree( pwszFontsPath );
-
-			ImVector< ImWchar > vecRanges = { };
-			ImFontGlyphRangesBuilder rangesBuilder = { };
-
-			static constexpr auto arrBaseRanges = std::to_array< ImWchar >( {
-					0x0100, 0x024F,
-					0x0300, 0x03FF,
-					0x0600, 0x06FF,
-					0x0E00, 0x0E7F,
-					0
-				}
-			);
-
-			rangesBuilder.AddRanges( arrBaseRanges.data( ) );
-			rangesBuilder.AddRanges( pIO->Fonts->GetGlyphRangesCyrillic( ) );
-			rangesBuilder.BuildRanges( &vecRanges );
-
-			ImFontConfig verdanaConfig = {};
-			verdanaConfig.FontBuilderFlags |= ImGuiFreeTypeBuilderFlags_Bold;
-			pIO->Fonts->AddFontFromFileTTF( ( pathFonts / "Verdana.ttf" ).string( ).c_str( ), 14.f, &verdanaConfig, vecRanges.Data );
-			pIO->Fonts->Build( );
-		}
 
 		ImGui_ImplWin32_Init( hWindow );
 		ImGui_ImplDX11_Init( pD3D11Device, pDeviceContext );
@@ -151,10 +152,13 @@ namespace Render
 			pRenderTargetView = nullptr;
 		}
 
-		ImGui_ImplDX11_Shutdown( );
-		ImGui_ImplWin32_Shutdown( );
+		if ( ImGui::GetCurrentContext( ) )
+		{
+			ImGui_ImplDX11_Shutdown( );
+			ImGui_ImplWin32_Shutdown( );
 
-		ImGui::DestroyContext( );
+			ImGui::DestroyContext( );
+		}
 	}
 
 	void RenderDrawData( IDXGISwapChain* pSwapChain, ID3D11Device* pD3D11Device, ImDrawList* pDrawList )

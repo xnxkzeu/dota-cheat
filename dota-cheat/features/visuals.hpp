@@ -13,7 +13,8 @@ public:
 	void OnRender( );
 
 private:
-	void HighlightIllusions( C_DOTA_BaseNPC_Hero* pHero );
+	void HighlightIllusions( C_DOTA_BaseNPC_Hero* pHero ) const;
+	void VisibleByEnemy( ) const;
 
 	C_DOTA_BaseNPC_Hero* m_pLocalHero = nullptr;
 };

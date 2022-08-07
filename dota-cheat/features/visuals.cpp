@@ -21,6 +21,8 @@ void CVisuals::OnRender( )
 	if ( m_pLocalHero = static_cast< C_DOTA_BaseNPC_Hero* >( CTX::DOTA->m_pEntitySystem->GetBaseEntityFromHandle( pLocalController->GetAssignedHeroHandle( ) ) ); !m_pLocalHero )
 		return;
 
+	VisibleByEnemy( );
+
 	for ( int nEntityIndex = 0, nEntityHighestIndex = CTX::DOTA->m_pEntitySystem->GetHighestEntityIndex( );
 		nEntityIndex <= nEntityHighestIndex;
 		nEntityIndex++ )
@@ -43,7 +45,7 @@ void CVisuals::OnRender( )
 	}
 }
 
-void CVisuals::HighlightIllusions( C_DOTA_BaseNPC_Hero* pHero )
+void CVisuals::HighlightIllusions( C_DOTA_BaseNPC_Hero* pHero ) const
 {
 	static constexpr Color_t ILLUSIONS_COLOR = Color_t( 0, 0, 255, 255 );
 
@@ -60,12 +62,32 @@ void CVisuals::HighlightIllusions( C_DOTA_BaseNPC_Hero* pHero )
 			pHero->OnColorChanged( );
 		}
 	}
-	else
+	else if ( clrRender == ILLUSIONS_COLOR )
 	{
-		if ( clrRender == ILLUSIONS_COLOR )
+		clrRender = Color_t( 255, 255, 255, 255 );
+		pHero->OnColorChanged( );
+	}
+
+}
+
+void CVisuals::VisibleByEnemy( ) const
+{
+	static constexpr Color_t VISIBLE_COLOR = Color_t( 255, 0, 0, 255 );
+
+	Color_t& clrRender = m_pLocalHero->GetRenderColor( );
+
+	if ( CTX::Config->Visuals.m_bVisibleByEnemy 
+		&& m_pLocalHero->GetStartSequenceCycle( ) == 0.f )
+	{
+		if ( clrRender != VISIBLE_COLOR )
 		{
-			clrRender = Color_t( 255, 255, 255, 255 );
-			pHero->OnColorChanged( );
+			clrRender = VISIBLE_COLOR;
+			m_pLocalHero->OnColorChanged( );
 		}
+	}
+	else if ( clrRender == VISIBLE_COLOR )
+	{
+		clrRender = Color_t( 255, 255, 255, 255 );
+		m_pLocalHero->OnColorChanged( );
 	}
 }
