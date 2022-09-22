@@ -150,6 +150,7 @@
     <ClCompile Include="dependencies\minhook\src\trampoline.c" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="features\visuals.cpp" />
+    <ClCompile Include="hooks\functions\cbaseplayercontroller.cpp" />
     <ClCompile Include="hooks\functions\present.cpp" />
     <ClCompile Include="hooks\functions\onrenderstart.cpp" />
     <ClCompile Include="hooks\functions\resizebuffers.cpp" />

@@ -55,8 +55,12 @@ struct HookHandler_t
 	static HRESULT __stdcall Present( IDXGISwapChain* pSwapchain, UINT unSyncInterval, UINT unFlags );
 	static HRESULT __stdcall ResizeBuffers( IDXGISwapChain* pSwapchain, UINT unBufferCount, UINT unWidth, UINT unHeight, int nNewFormat, UINT unSwapchainFlags );
 
+	static int64_t __fastcall  OnCBasePlayerControllerDtor(void* pPlayerControllerInstance, char a2);
+
 	HOOK_VIRTUAL_FUNCTION( CTX::DOTA->m_pViewRender, 4, OnRenderStart );
 
 	HOOK_FUNCTION( CTX::Memory->IDXGISwapChain.pfnPresent, Present );
 	HOOK_FUNCTION( CTX::Memory->IDXGISwapChain.pfnResizeBuffers, ResizeBuffers );
+
+	HOOK_FUNCTION( CTX::Memory->CBasePlayerController.pfnDtor, OnCBasePlayerControllerDtor);
 };

@@ -10,19 +10,6 @@
 
 void CVisuals::OnRender( )
 {
-	int nLocalPlayerSlot = -1;
-	if ( CTX::DOTA->m_pEngineClient->GetLocalPlayer( nLocalPlayerSlot ); nLocalPlayerSlot == -1 )
-		return;
-
-	C_DOTAPlayerController* pLocalController = static_cast< C_DOTAPlayerController* >( CTX::DOTA->m_pEntitySystem->GetBaseEntity( nLocalPlayerSlot + 1 ) );
-	if ( !pLocalController )
-		return;
-
-	if ( m_pLocalHero = static_cast< C_DOTA_BaseNPC_Hero* >( CTX::DOTA->m_pEntitySystem->GetBaseEntityFromHandle( pLocalController->GetAssignedHeroHandle( ) ) ); !m_pLocalHero )
-		return;
-
-	VisibleByEnemy( );
-
 	for ( int nEntityIndex = 0, nEntityHighestIndex = CTX::DOTA->m_pEntitySystem->GetHighestEntityIndex( );
 		nEntityIndex <= nEntityHighestIndex;
 		nEntityIndex++ )
@@ -32,8 +19,21 @@ void CVisuals::OnRender( )
 			continue;
 
 		CEntityIdentity* pEntityIdentity = pEntity->GetEntityIdentity( );
-		if ( !pEntityIdentity
-			|| !pEntityIdentity->m_pszEntityName
+		if ( !pEntityIdentity || !pEntityIdentity->m_pszEntityName )
+			continue;
+
+		if ( !strcmp(pEntityIdentity->m_pszEntityName, "dota_player_controller") )
+		{
+			if ( C_DOTAPlayerController* pPlayerController = static_cast< C_DOTAPlayerController* >( pEntity );
+				pPlayerController->GetIsLocalPlayerController() )
+			{
+				m_pLocalPlayerController = pPlayerController;
+				m_pLocalHero = static_cast< C_DOTA_BaseNPC_Hero* >( CTX::DOTA->m_pEntitySystem->GetBaseEntityFromHandle( m_pLocalPlayerController->GetAssignedHeroHandle( ) ) );
+			}
+			continue;
+		}
+
+		if ( !m_pLocalHero
 			|| strstr( pEntityIdentity->m_pszEntityName, "npc_dota_hero" ) != pEntityIdentity->m_pszEntityName )
 			continue;
 
@@ -43,6 +43,11 @@ void CVisuals::OnRender( )
 
 		HighlightIllusions( pHero );
 	}
+
+	if ( !m_pLocalHero )
+		return;
+
+	VisibleByEnemy( );
 }
 
 void CVisuals::HighlightIllusions( C_DOTA_BaseNPC_Hero* pHero ) const
