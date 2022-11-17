@@ -18,7 +18,7 @@ namespace CTX
 
 		struct
 		{
-			ADD_ADDRESS( pfnOnColorChanged, CLIENT_DLL, "E8 ? ? ? ? 48 83 C6 7C" ).Jump( );
+			ADD_ADDRESS( pfnOnColorChanged, CLIENT_DLL, "E8 ? ? ? ? 80 BF ? ? ? ? ? 74 1E" ).Jump( );
 		} C_BaseModelEntity;
 	};
 

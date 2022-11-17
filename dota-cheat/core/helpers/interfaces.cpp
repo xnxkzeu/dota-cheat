@@ -49,7 +49,7 @@ namespace Interfaces
 			void* m_pGameSystem;
 		};
 
-		IGameSystemFactory* pFactory = Memory::FindPattern( CLIENT_DLL, "4C 8B 35 ? ? ? ? 4D 85 F6 0F 84 ? ? ? ? 41 BF" ).Jump( 0x3 ).Get( ).Cast < IGameSystemFactory* >( );
+		IGameSystemFactory* pFactory = Memory::FindPattern( CLIENT_DLL, "48 81 EC ? ? ? ? 48 8B 1D ? ? ? ? 48 85 DB" ).Jump( 0xA ).Get( ).Cast < IGameSystemFactory* >( );
 		if ( !pFactory )
 			throw std::runtime_error( "Failed to find game system factory list." );
 

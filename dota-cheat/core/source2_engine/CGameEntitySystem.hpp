@@ -16,21 +16,18 @@ class CEntityIdentity
 public:
 	C_BaseEntity* m_pEntity;
 private:
-	[[ maybe_unused ]]
-	std::byte m_pad0[ 0x8 ];
+	[[ maybe_unused ]] std::byte m_pad0[ 0x8 ];
 public:
 	CEntityHandle m_hEntity;
 	const char* m_pszInternalName;
 	const char* m_pszEntityName;
 private:
-	[[ maybe_unused ]]
-	std::byte m_pad1[ 0x28 ];
+	[[ maybe_unused ]] std::byte m_pad1[ 0x28 ];
 public:
 	CEntityIdentity* m_pPrev;
 	CEntityIdentity* m_pNext;
 private:
-	[[ maybe_unused ]]
-	std::byte m_pad2[ 0x18 ];
+	[[ maybe_unused ]] std::byte m_pad2[ 0x10 ];
 };
 
 class CEntityIdentities
@@ -65,11 +62,10 @@ public:
 
 	int GetHighestEntityIndex()
 	{
-		return *reinterpret_cast< int* >( reinterpret_cast< std::uintptr_t >( this ) + 0x2090 ) + 1;
+		return *reinterpret_cast< int* >( reinterpret_cast< std::uintptr_t >( this ) + 0x1E90 ) + 1;
 	}
 private:
-	[[ maybe_unused ]]
-	std::byte m_pad0[ 0x10 ];
+	[[ maybe_unused ]] std::byte m_pad0[ 0x10 ];
 public:
 	CEntityIdentities* m_pIdentityChunks[ MAX_ENTITY_LISTS ];
 };

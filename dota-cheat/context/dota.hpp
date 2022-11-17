@@ -28,8 +28,8 @@ namespace CTX
 		ADD_INTERFACE( ISchemaSystem, m_pSchemaSystem, SCHEMASYSTEM_DLL, "SchemaSystem_" );
 		
 		ADD_INTERFACE_CUSTOM( ID3D11Device, m_pD3D11Device, Memory::FindPattern( RENDERSYSTEMDX11_DLL, "48 89 1D ? ? ? ? 48 89 3D" ).Jump( 0xA ).Get( ) );
-		ADD_INTERFACE_CUSTOM( CDOTAViewRender, m_pViewRender, Memory::FindPattern( CLIENT_DLL, "48 8D 0D ? ? ? ? 48 89 44 24 ? 48 8B D6" ).Jump( 0x3 ) );
-		ADD_INTERFACE_CUSTOM( CGameEntitySystem, m_pEntitySystem, Memory::FindPattern( CLIENT_DLL, "48 8B 0D ? ? ? ? 48 8B F8 48 89 81" ).Jump( 0x3 ).Get( ) );
+		ADD_INTERFACE_CUSTOM( CDOTAViewRender, m_pViewRender, Memory::FindPattern( CLIENT_DLL, "48 8D 0D ? ? ? ? 8B D8 E8 ? ? ? ? 45 0F 57 ED" ).Jump( 0x3 ) );
+		ADD_INTERFACE_CUSTOM( CGameEntitySystem, m_pEntitySystem, Memory::FindPattern( CLIENT_DLL, "48 8B 0D ? ? ? ? 48 85 C9 74 5B 48 8D 54 24" ).Jump( 0x3 ).Get( ) );
 
 		ADD_GAMESYSTEM( CRenderGameSystem, m_ppRenderGameSystem, "RenderGameSystem" );
 	};
