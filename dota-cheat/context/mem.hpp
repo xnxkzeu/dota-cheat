@@ -20,6 +20,11 @@ namespace CTX
 		{
 			ADD_ADDRESS( pfnOnColorChanged, CLIENT_DLL, "E8 ? ? ? ? 80 BF ? ? ? ? ? 74 1E" ).Jump( );
 		} C_BaseModelEntity;
+
+		struct
+		{
+			ADD_ADDRESS( pfnDtor, CLIENT_DLL, "48 89 5C 24 08 57 48 83 EC 20 8B DA 48 8B F9 E8 2C 00 00 00 F6 C3 01 74 0D BA 98 0D 00 00 48 8B CF" );
+		} CBasePlayerController;
 	};
 
 	inline std::optional< Memory_t > Memory = std::nullopt; // @note xnxkzeu: std::optional is used here to delay initialization.

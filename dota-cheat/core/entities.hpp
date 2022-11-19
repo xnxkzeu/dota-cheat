@@ -53,7 +53,13 @@ public:
 	SCHEMA_VARIABLE( "C_DOTA_BaseNPC_Hero", "m_hReplicatingOtherHeroModel", GetReplicatingHeroHandle, CEntityHandle );
 };
 
-class C_DOTAPlayerController : public C_BaseEntity
+class CBasePlayerController : public C_BaseEntity
+{
+public:
+	SCHEMA_VARIABLE( "CBasePlayerController", "m_bIsLocalPlayerController", GetIsLocalPlayerController, bool );
+};
+
+class C_DOTAPlayerController : public CBasePlayerController
 {
 public:
 	SCHEMA_VARIABLE( "C_DOTAPlayerController", "m_hAssignedHero", GetAssignedHeroHandle, CEntityHandle );
